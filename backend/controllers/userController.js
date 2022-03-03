@@ -1,54 +1,82 @@
-import user from "../models/user.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import bcrypt from "../lib/bcrypt.js";
+import jwt from "../lib/jwt.js";
 import moment from "moment";
 
+import UserModel from "../models/user.js";
+import UserServices from "../services/user.js";
+
 const registerUser = async (req, res) => {
-  if (!req.body.name || !req.body.description)
-    return res.status(400).send({ message: "Incomplete data" });
+  let passHash = await bcrypt.hashGenerate(req.body.password);
 
-  const passHash = await bcrypt.hash(req.body.password, 10);
-
-  const userSchema = new user({
+  const userSchema = new UserModel({
     name: req.body.name,
     email: req.body.email,
     password: passHash,
     role: req.body.role,
     dbStatus: true,
   });
+
   const result = await userSchema.save();
-  if (!result) res.status(500).send({ message: "Failed to register user" });
-  try {
-    return res.status(200).json({
-      token: jwt.sign(
-        //jwt nombre librería sign metodo q construye el token
-        {
-          _id: result._id, //
-          name: result.name,
-          role: result.role,
-          iat: moment().unix(),
-        },
-        process.env.SK_JWT //process.env para leer vbls entorno. En SK_JWT está la SK elegida.
-      ),
-    });
-  } catch (e) {
-    return res.status(500).send({ message: "Register error" });
-  }
+
+  if (!result)
+    return res.status(500).send({ message: "Failed to register user" });
+
+  const token = await jwt.generateToken(result);
+
+  return !token
+    ? res.status(500).send({ message: "Failed to register user" })
+    : res.status(200).send({ token });
 };
 
 const listUser = async (req, res) => {
-  let users = await user
-    .find({ name: new RegExp(req.params["name"]) })
+  const users = await UserModel.find(
+    {
+      $and: [
+        { name: new RegExp(req.params["name"], "i") },
+        { dbStatus: "true" },
+      ],
+    },
+    { _id: 0, name: 1 }
+  );
+
+  return users.length === 0
+    ? res.status(400).send({ message: "No search results" })
+    : res.status(200).send({ users });
+};
+
+const listUserAdmin = async (req, res) => {
+  const users = await UserServices.find({
+    $and: [{ name: new RegExp(req.params["name"], "i") }],
+  })
     .populate("role")
     .exec();
-  if (users.length === 0)
-    return res.status(400).send({ message: "No search results" });
 
-  return res.status(200).send({ users });
+  return users.length === 0
+    ? res.status(404).send({ message: "No search results found" })
+    : res.status(200).send({ users });
+};
+
+const findUser = async (req, res) => {
+  const userfind = await UserServices.findById({ _id: req.params["_id"] })
+    .populate("role")
+    .exec();
+  return !userfind
+    ? res.status(400).send({ message: "No search results" })
+    : res.status(200).send({ userfind });
+};
+
+const getUserRole = async (req, res) => {
+  let userRole = await UserServices.findOne({ email: req.params.email })
+    .populate("role")
+    .exec();
+  if (!userRole) return res.status(400).send({ message: "No search results" });
+
+  userRole = userRole.role.name;
+  return res.status(200).send({ userRole });
 };
 
 const login = async (req, res) => {
-  const userLogin = await user.findOne({ email: req.body.email });
+  const userLogin = await UserModel.findOne({ email: req.body.email });
   if (!userLogin)
     return res.status(400).send({ message: "Wrong email or password" });
   if (!userLogin.dbStatus)
@@ -74,28 +102,49 @@ const login = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-  if (!req.params["_id"])
-    return res.status(400).send({ message: "Incomplete data" });
-  const users = await user.findByIdAndUpdate(req.params["_id"], {
+  const deleted = await UserModel.findByIdAndUpdate(req.params["_id"], {
     dbStatus: false,
   });
-  return !users
+  return !deleted
     ? res.status(400).send({ message: "Error deleting user" })
-    : res.status(200).send({ message: "Used deleted" });
+    : res.status(200).send({ message: "User deleted" });
 };
 
-const updateUserAdmin = async (req, res) => {
-  if (!req.body._id || !req.body.name || !req.body.role || !req.body.email)
-    return res.status(400).send({ message: "Incomplete data" });
+const updateUser = async (req, res) => {
+  const findUser = await UserModel.findOne({ email: req.body.email });
 
-  let pass = "";//para guardar la contraseña con hash encontrada en la bd
+  let pass = findUser.password; //para guardar la contraseña con hash encontrada en la bd
+  let role = findUser.role;
 
-  if (!req.body.password) {
-    const findUser = await user.findOne({ email: req.body.email });
-    pass = findUser.password;
-  } else {
-    pass = await bcrypt.hash(req.body.password, 10);//el if verificó que si contiene algo el campo contraseña y aquí guardamos ese password que contenía ese body (el que modificó el usuario admin en el formulario) y usamos el pass para enctriptarla.
+  if (req.body.password) {
+    const passHash = await bcrypt.hashCompare(req.body.password, pass);
+    if (!passHash) pass = await bcrypt.hashGenerate(req.body.password);
   }
+
+  if (req.user.roleName === "admin") role = req.body.role;
+
+  let changes = await UserServices.isChanges(req.body, pass);
+
+  if (changes)
+    return res.status(400).send({ mesagge: "You didn't make any changes" });
+
+  const updated = await UserModel.findByIdAndUpdate(req.body._id, {
+    name: req.body.name,
+    password: pass,
+    role: req.body.role,
+  });
+  return !updated
+    ? res.status(500).send({ message: "Error editing user" })
+    : res.status(200).send({ message: "User updated" });
 };
 
-export default { registerUser, listUser, login, deleteUser, updateUserAdmin };
+export default {
+  registerUser,
+  listUser,
+  listUserAdmin,
+  findUser,
+  getUserRole,
+  login,
+  deleteUser,
+  updateUser,
+};

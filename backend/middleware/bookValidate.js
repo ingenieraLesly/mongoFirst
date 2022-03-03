@@ -1,11 +1,11 @@
-import book from "../models/book.js";
+// import book from "../models/book.js";
 
-const existingBook = async (req, res, next) => {
-  const title = await book.findOne({ name: "title" });
-  if (!title)
-    return res.status(500).send({ message: "This title is not available." });
+// const existingBook = async (req, res, next) => {
+//   const title = await book.findOne({ name: "title" });
+//   if (!title)
+//     return res.status(404).send({ message: "This title is not available." });
 
-  next();
-};
+//   next();
+// };
 
-export default { existingBook };
+// export default { existingBook };

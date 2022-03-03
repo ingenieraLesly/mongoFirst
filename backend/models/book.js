@@ -19,7 +19,7 @@ const bookSchema = new mongoose.Schema({
     priceBook: Number,
     user: String,
     registerDate: { type: Date, default: Date.now },
-    dbStatus: true
+    dbStatus: Boolean
     //comments
 });
 

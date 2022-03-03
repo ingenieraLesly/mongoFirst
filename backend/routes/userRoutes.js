@@ -1,18 +1,61 @@
 import express from "express";
+
 import userController from "../controllers/userController.js";
-import roleMidd from "../middleware/roleValidate";
+import roleMidd from "../middleware/roleValidate.js";
 import userMidd from "../middleware/userValidate.js";
+import adminMidd from "../middleware/admin.js";
+import auth from "../middleware/auth.js";
+import validId from "../middleware/validId.js";
+
 const router = express.Router();
 
 router.post(
-  "/registerUser",
-  roleMidd.existingRole,
+  "/register",
   userMidd.existingUser,
-  user.registerUser
+  roleMidd.getRoleUser,
+  userController.registerUser
 );
 
-router.get("/listUser/:name?", userController.listUser); //si encuentras algo ejecuta el filtro puesto en controller (req.params)
+router.post(
+  "/registerAdminUser",
+  userMidd.validRole,
+  userMidd.existingUser,
+  auth,
+  adminMidd,
+  userController.registerUser
+);
 
-router.post("/login", )
+router.get("/listUsers/:name?", auth, adminMidd, userController.listUser);
+
+router.get(
+  "/listAllUsers/:name?",
+  auth,
+  adminMidd,
+  userController.listUserAdmin
+);
+
+router.get("/getRole/:email", auth, userController.getUserRole);
+
+router.get("findUser/:_id", auth, validId, adminMidd, userController.findUser);
+
+router.put(
+  "/updateUser",
+  auth,
+  userMidd.validDataUpdate,
+  userController.updateUser
+);
+
+router.put(
+  "/updateUserAdmin",
+  auth,
+  adminMidd,
+  userMidd.validDataUpdate,
+  userMidd.validRole,
+  userController.updateUser
+);
+
+router.put("/deleteUser/:_id", auth, validId, userController.deleteUser);
+
+router.post("/login", userController.login);
 
 export default router;
