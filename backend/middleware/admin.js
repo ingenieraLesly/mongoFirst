@@ -1,6 +1,7 @@
 import Role from "../models/role.js";
 
 const admin = async (req, res, next) => {
+  console.log(req.user);
   const adminRole = await Role.findById(req.user.role);
   if (!adminRole) return res.status(400).send({ message: "Role no found" });
 

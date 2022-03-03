@@ -8,7 +8,7 @@ const generateToken = async (user) => {
       {
         _id: user._id,
         name: user.name,
-        role: user.role,
+        role: user.roleID,
         iat: moment().unix(),
       },
       process.env.SK_JWT

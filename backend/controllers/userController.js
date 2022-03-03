@@ -12,7 +12,7 @@ const registerUser = async (req, res) => {
     name: req.body.name,
     email: req.body.email,
     password: passHash,
-    role: req.body.role,
+    roleID: req.body.role, //remmember:el que llega del schema es el primer parametro antes de los dos puntos.Debe ser igual al schema
     dbStatus: true,
   });
 
@@ -81,24 +81,16 @@ const login = async (req, res) => {
     return res.status(400).send({ message: "Wrong email or password" });
   if (!userLogin.dbStatus)
     return res.status(400).send({ message: "User no found" });
-  const passHash = await bcrypt.compare(req.body.password, userLogin.password);
+  const passHash = await bcrypt.hashCompare(
+    req.body.password,
+    userLogin.password
+  );
   if (!passHash)
     return res.status(400).send({ message: "Wrong email or password" });
-  try {
-    return registerUser.status(200).json({
-      TOKEN: jwt.sign(
-        {
-          _id: userLogin._id,
-          name: userLogin.name,
-          role: userLogin.role,
-          iat: moment().unix(),
-        },
-        process.env.SK_JWT
-      ),
-    });
-  } catch (e) {
-    return res.status(500).send({ message: "login error" });
-  }
+  const token = await jwt.generateToken(userLogin);
+  return !token
+    ? res.status(500).send({ message: "Error generated token" })
+    : res.status(200).send({ message: token });
 };
 
 const deleteUser = async (req, res) => {
@@ -114,7 +106,7 @@ const updateUser = async (req, res) => {
   const findUser = await UserModel.findOne({ email: req.body.email });
 
   let pass = findUser.password; //para guardar la contraseña con hash encontrada en la bd
-  let role = findUser.role;
+  let role = findUser.roleID;
 
   if (req.body.password) {
     const passHash = await bcrypt.hashCompare(req.body.password, pass);
@@ -131,7 +123,7 @@ const updateUser = async (req, res) => {
   const updated = await UserModel.findByIdAndUpdate(req.body._id, {
     name: req.body.name,
     password: pass,
-    role: req.body.role,
+    roleID: req.body.role,
   });
   return !updated
     ? res.status(500).send({ message: "Error editing user" })
