@@ -28,6 +28,35 @@ const registerUser = async (req, res) => {
     : res.status(200).send({ token });
 };
 
+const registerAdminUser = async (req, res) => {
+  if (
+    !req.body.name ||
+    !req.body.email ||
+    !req.body.password ||
+    !req.body.roleId
+  )
+    return res.status(400).send({ message: "Incomplete data" });
+
+  const existingUser = await user.findOne({ email: req.body.email });
+  if (existingUser)
+    return res.status(400).send({ message: "The user is already registered" });
+
+  const passHash = await bcrypt.hash(req.body.password, 10);
+
+  const userRegister = new user({
+    name: req.body.name,
+    email: req.body.email,
+    password: passHash,
+    roleId: req.body.roleId,
+    dbStatus: true,
+  });
+
+  const result = await userRegister.save();
+  return !result
+    ? res.status(400).send({ message: "Failed to register user" })
+    : res.status(200).send({ result });
+};
+
 const listUser = async (req, res) => {
   const users = await UserModel.find(
     {
@@ -132,6 +161,7 @@ const updateUser = async (req, res) => {
 
 export default {
   registerUser,
+  registerAdminUser,
   listUser,
   listUserAdmin,
   findUser,

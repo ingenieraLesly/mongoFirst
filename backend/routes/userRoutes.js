@@ -22,7 +22,7 @@ router.post(
   userMidd.existingUser,
   auth,
   adminMidd,
-  userController.registerUser
+  userController.registerAdminUser
 );
 
 router.get("/listUsers/:name?", auth, adminMidd, userController.listUser);
