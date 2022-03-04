@@ -19,8 +19,17 @@ import { BoardService } from './services/board.service';
 import { RoleService } from './services/role.service';
 import { TokenInterceptorService } from './services/token-interceptor.service';
 import { UserService } from './services/user.service';
-import { AuthGuard } from "./guard/auth.guard";
+import { AuthGuard } from './guard/auth.guard';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+//imports manuales requeridos para el proyecto
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -38,8 +47,27 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     ListRoleComponent,
     UpdateRoleComponent,
   ],
-  imports: [BrowserModule, AppRoutingModule, BrowserAnimationsModule],
-  providers: [BoardService, RoleService, TokenInterceptorService, UserService, AuthGuard],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    BrowserAnimationsModule,
+    FormsModule,
+    ReactiveFormsModule,
+    HttpClientModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatCardModule,
+    MatInputModule,
+    MatSnackBarModule,
+  ],
+  providers: [
+    BoardService,
+    RoleService,
+    TokenInterceptorService,
+    UserService,
+    AuthGuard,
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
