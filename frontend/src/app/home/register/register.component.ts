@@ -37,7 +37,7 @@ export class RegisterComponent implements OnInit {
       this.openSnackBarError();
     } else {
       this._userService.registerUser(this.registerData).subscribe({
-        next: (v) => {//si todo sale bien (do puntos: esto va a llevar.tipo de vble. en este caso dice que esto es una validación con json adentro)
+        next: (v) => {//si todo sale bien (dos puntos: esto va a llevar.tipo de vble. en este caso dice que esto es una validación con json adentro que le llegó del backend al enviar lo que haía en registerData a la función registerUser del user.service)
           localStorage.setItem('token', v.token);//guardeme en el local un token
           this._router.navigate(['/saveTask']);//y redireccioneme a saveTask
           this.message = 'Suscesfull user registration';//y muestreme un mensaje = asigna un valor

@@ -1,6 +1,5 @@
 import bcrypt from "../lib/bcrypt.js";
 import jwt from "../lib/jwt.js";
-import moment from "moment";
 
 import UserModel from "../models/user.js";
 import UserServices from "../services/user.js";
@@ -105,17 +104,23 @@ const getUserRole = async (req, res) => {
 };
 
 const login = async (req, res) => {
+  if (!req.body.email || !req.body.password)
+    return res.status(400).send({ message: "Incomplete data" });
+
   const userLogin = await UserModel.findOne({ email: req.body.email });
   if (!userLogin)
     return res.status(400).send({ message: "Wrong email or password" });
+
   if (!userLogin.dbStatus)
     return res.status(400).send({ message: "User no found" });
   const passHash = await bcrypt.hashCompare(
     req.body.password,
     userLogin.password
   );
+  
   if (!passHash)
     return res.status(400).send({ message: "Wrong email or password" });
+    
   const token = await jwt.generateToken(userLogin);
   return !token
     ? res.status(500).send({ message: "Error generated token" })
